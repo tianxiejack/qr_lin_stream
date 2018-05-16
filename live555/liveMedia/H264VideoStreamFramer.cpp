@@ -342,13 +342,13 @@ void LiveSourceWithx264::deliverFrame()
     	trancate = 3;
     }
 
-    if ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 0 && nal.p_payload[3] == 1&& (tmpBuf[4] & 0x1F)==8 )
+    if ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 0 && nal.p_payload[3] == 1&& (nal[4] & 0x1F)==8 )
     {
     	bDetectPPS=false;
     	//printf("bDetectPPS=false;\n");
     }
-    if( ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 1 && (tmpBuf[3] & 0x1F)==5)||
-    		 ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 0 && nal.p_payload[3] ==1 && (tmpBuf[4] & 0x1F)==5))
+    if( ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 1 && (nal[3] & 0x1F)==5)||
+    		 ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 0 && nal.p_payload[3] ==1 && (nal[4] & 0x1F)==5))
     {
     	bDetectIDR=false;
     	//printf("bDetectIDR=false;\n");

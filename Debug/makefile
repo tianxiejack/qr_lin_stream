@@ -64,7 +64,7 @@ all: local_test_live555
 local_test_live555: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: NVCC Linker'
-	/usr/local/cuda-8.0/bin/nvcc --cudart shared -L/usr/local/lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu/tegra -L/usr/local/cuda-8.0/targets/aarch64-linux/lib --relocatable-device-code=false -gencode arch=compute_50,code=compute_50 -gencode arch=compute_50,code=sm_50 -link -o  "local_test_live555" $(OBJS) $(USER_OBJS) $(LIBS)
+	/usr/local/cuda-8.0/bin/nvcc --cudart shared -L/usr/local/lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu/tegra -L/usr/local/cuda-8.0/targets/aarch64-linux/lib --relocatable-device-code=false -gencode arch=compute_50,code=compute_50 -gencode arch=compute_50,code=sm_50 -m64 -ccbin aarch64-linux-gnu-g++ -link -o  "local_test_live555" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

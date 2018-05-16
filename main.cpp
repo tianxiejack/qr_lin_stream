@@ -2,12 +2,14 @@
 #include "BasicUsageEnvironment.hh"
 #include "UsageEnvironment.hh"
 #include <iostream>
+#include <stdio.h>
 
-
-#define USE_NET_RECEIVE		(0)
+#define USE_NET_RECEIVE		(1)
 
 #if USE_NET_RECEIVE
-
+	#include <app_global_def.h>
+	#include <app_bitsInterfaces.h>
+	#include "gst_ring_buffer.h"
 #else
 	#include "gst_encode.h"
 #endif
@@ -26,8 +28,28 @@ static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
 
 int main(int argc, char** argv) {
 
-#if USE_NET_RECEIVE
+	printf(" Build Timestamp: date %s %s\r\n", __DATE__, __TIME__);
 
+#if USE_NET_RECEIVE
+		int i, runstat = -1;
+		int localPort = 0;
+
+		for(i=1; i<argc; i++)
+		{
+				if(atoi(argv[i]) != 0)
+				{
+						localPort = atoi(argv[i]);
+						runstat = 0;
+				}
+		}
+		if((argc <= 1) || (runstat == -1) || (localPort < 15000 || localPort > 20000))
+		{
+				printf(" Usage: a.out [socket port](15000-20000) \r\n");
+				printf(" Example: ./a.out 17000 \r\n");
+				printf(" \n");
+				return 0;
+		}
+		bitsInterfacesCreate(localPort);
 #else
 	create_ring_buffer();
 	gst_main();
@@ -74,6 +96,10 @@ int main(int argc, char** argv) {
   }
 
   env->taskScheduler().doEventLoop(); // does not return
+
+#if USE_NET_RECEIVE
+  bitsInterfacesDestroy();
+#endif
 
   return 0; // only to prevent compiler warning
 }

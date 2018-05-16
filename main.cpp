@@ -1,12 +1,18 @@
 #include "liveMedia.hh"
 #include "BasicUsageEnvironment.hh"
 #include "UsageEnvironment.hh"
-#include "gst_encode.h"
 #include <iostream>
 
 
-using namespace std;
+#define USE_NET_RECEIVE		(0)
 
+#if USE_NET_RECEIVE
+
+#else
+	#include "gst_encode.h"
+#endif
+
+using namespace std;
 UsageEnvironment* env;
 
 // To make the second and subsequent client for each stream reuse the same
@@ -20,8 +26,12 @@ static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
 
 int main(int argc, char** argv) {
 
+#if USE_NET_RECEIVE
+
+#else
 	create_ring_buffer();
 	gst_main();
+#endif
 
   // Begin by setting up our usage environment:
   TaskScheduler* scheduler = BasicTaskScheduler::createNew();
@@ -43,21 +53,6 @@ int main(int argc, char** argv) {
   // "ServerMediaSession" object, plus one or more
   // "ServerMediaSubsession" objects for each audio/video substream.
 
-
-#if 0
-  // A H.264 video elementary stream:
-  {
-    char const* streamName = "live";
-    ServerMediaSession* sms
-      = ServerMediaSession::createNew(*env, streamName, streamName,
-				      descriptionString);
-    sms->addSubsession(H264LiveVideoServerMediaSubsession
-		       ::createNew(*env, reuseFirstSource));
-    rtspServer->addServerMediaSession(sms);
-
-    announceStream(rtspServer, sms, streamName);
-  }
-  #endif
 #if 1
   	  OutPacketBuffer::maxSize = 600000;
       std::string streamName = "stream1";
@@ -68,8 +63,6 @@ int main(int argc, char** argv) {
 
       announceStream(rtspServer, sms, streamName.c_str());
 #endif
-
-
 
   // Also, attempt to create a HTTP server for RTSP-over-HTTP tunneling.
   // Try first with the default HTTP port (80), and then with the alternative HTTP

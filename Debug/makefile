@@ -9,6 +9,8 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir.mk
+-include use_net_encode_data/src/subdir.mk
+-include use_gst_encode/subdir.mk
 -include live555/osa/subdir.mk
 -include live555/liveMedia/subdir.mk
 -include live555/groupsock/subdir.mk

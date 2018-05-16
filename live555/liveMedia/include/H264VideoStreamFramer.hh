@@ -98,7 +98,7 @@ private:
     RTPSink* fDummySink;
 protected:
   	//virtual char const* sdpLines();
-    virtual char const* getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource);
+   // virtual char const* getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource);
 };
 
 

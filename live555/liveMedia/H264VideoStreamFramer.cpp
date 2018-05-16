@@ -177,7 +177,7 @@ char const* H264LiveServerMediaSession::sdpLines()
 	"a=fmtp:96 packetization-mode=1;profile-level-id=64001E;sprop-parameter-sets=H264\r\n"
     "a=control:track1\r\n";
 }
-*/
+
 
 char const* H264LiveServerMediaSession::getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource)
 {
@@ -192,7 +192,7 @@ char const* H264LiveServerMediaSession::getAuxSDPLine(RTPSink* rtpSink, FramedSo
     envir().taskScheduler().doEventLoop(&fDoneFlag);
     return fAuxSDPLine;
 }
-
+*/
 
 
 
@@ -248,50 +248,7 @@ void LiveSourceWithx264::encodeNewFrame()
         x264_nal_t nal ;
         nal.p_payload = (uint8_t*)get_ring_buf_ptr();
         nal.i_payload = get_ring_buf_length();
-
-        //把一帧放入queue
-        if ( nal.p_payload[0] == 0 && nal.p_payload[1] == 0 && nal.p_payload[2] == 0 && nal.p_payload[3] == 1 &&  (nal.p_payload[4] & 0x1F)==7  )
-		{
-        		int i = 0;
-        		uint8_t* tmpBuf = nal.p_payload;
-        		 int pps_len=0;
-        		 int sps_len=0;
-        		 //printf("----------detect SPS;\n");
-        		for(tmpBuf+=5,i=5; i<nal.i_payload; i++, tmpBuf++ )
-        		{
-        			if ( tmpBuf[0] == 0 && tmpBuf[1] == 0 && tmpBuf[2] == 0 && tmpBuf[3] == 1 && (tmpBuf[4] & 0x1F)==8 )
-        			{
-								x264_nal_t spsNal ;
-								spsNal.p_payload = nal.p_payload;
-								spsNal.i_payload = i;
-								sps_len=i;
-								nalQueue.push(spsNal);
-								//printf(" receive buffer: nal.i_payload=%d,nal.p_payload=%p\n", nal.i_payload, nal.p_payload);
-								assert(!bDetectPPS);
-								bDetectPPS=true;
-								//printf("bDetectPPS=true;\n");
-								//printf("move%d byte----------detect PPS; Add spsNal: spsNal.i_payload=%d,spsNal.p_payload=%p\n", i, spsNal.i_payload, spsNal.p_payload);
-        			}
-					if( ( tmpBuf[0] == 0 && tmpBuf[1] == 0 && tmpBuf[2] == 0 && tmpBuf[3] == 1 && (tmpBuf[4] & 0x1F)==5)
-							||( tmpBuf[0] == 0 && tmpBuf[1] == 0 && tmpBuf[2] == 1 && (tmpBuf[3] & 0x1F)==5 ) )
-					{
-						       assert(sps_len<=i);
-								x264_nal_t ppsNal ;
-								ppsNal.p_payload = nal.p_payload+sps_len;
-								pps_len= i - sps_len;
-								ppsNal.i_payload = pps_len;
-								nalQueue.push(ppsNal);
-								//printf("move%d byte----------detect IDR; Add ppsNal: ppsNal.i_payload=%d,ppsNal.p_payload=%p\n",  i, ppsNal.i_payload, ppsNal.p_payload);
-								nal.p_payload = tmpBuf;
-								nal.i_payload = nal.i_payload-i;
-								assert(!bDetectIDR);
-								bDetectIDR=true;
-								//printf("bDetectIDR=true;\n");
-								break;
-					}
-        		}
-		}
-         nalQueue.push(nal);
+        nalQueue.push(nal);
 }
 
 void LiveSourceWithx264::deliverFrame0(void* clientData)

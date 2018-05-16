@@ -51,8 +51,8 @@ int main(int argc, char** argv) {
 		}
 		bitsInterfacesCreate(localPort);
 #else
-	create_ring_buffer();
-	gst_main();
+		create_ring_buffer();
+		gst_main();
 #endif
 
   // Begin by setting up our usage environment:

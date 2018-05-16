@@ -11,18 +11,16 @@
 
 using namespace std;
 
-#define  USE_H264_ENCODE_FILE	(0)
-
-#define  USE_UDPSINK			(0)
-#define  USE_DISPLAYSINK		(0)
-#define  USE_FAKESINK			(0)
+#define ARM 					(0)			//1:使用板卡上的编码插件； 0:使用本地linux上的编码插件x264enc。
+#define LOCAL_TEST		(1)			//1:使用自己提供源插件videotestsrc；0:使用摄像头插件v4l2src作为源。
+#define SAVE_FILE			(0)			//1:开启本地存储；0:关闭本地存储。
 
 void * thread(void * a);
 int gst_test(int argc, char *argv[]);
 static gboolean bus_call(GstBus *bus, GstMessage *message, gpointer user_data);
 
 typedef struct _CustomData {
-	GstElement *pipeline, *source, *qtdemux, *h264parse, *h264dec, *videoconvert, *x264enc, *h264parse1, *appsink, *glimagesink, *rtph264pay, *udpsink;
+	GstElement *pipeline, *source, *qtdemux, *h264parse, *h264dec, *videoconvert, *x264enc, *h264parse1, *appsink,  *rtph264pay, *udpsink;
 
 	GstBus *bus;
 	gboolean playing;
@@ -40,18 +38,25 @@ typedef struct _CustomData {
 
 } CustomData;
 
+#if SAVE_FILE
 FILE *fd;
+#endif
+
 void gst_main()
 {
 	pthread_t id;
+
+#if SAVE_FILE
 	fd = 	fopen("./test.264", "wb");
+#endif
+
 	int ret = pthread_create(&id, NULL, thread, NULL);
 	if (ret != 0)
 	{
-		cout << "线程创建错误！" << endl;
+		cout << "pthread create failed！" << endl;
 		exit(-1);
 	}
-//	pthread_join(id, NULL);
+	//pthread_join(id, NULL);
 }
 
 void * thread(void * a)
@@ -88,10 +93,15 @@ static GstPadProbeReturn enc_buffer(GstPad *pad, GstPadProbeInfo *info, gpointer
 		iBufSize = gst_buffer_get_size(buffer);
 
 		put_ring_buffer((char *)map.data, iBufSize);
+
+#if SAVE_FILE
 		fwrite(map.data, 1, iBufSize, fd);
+#endif
+
+		//g_print ("encode size = %d, appsink0_buffer = %02x %02x %02x %02x %02x\n",iBufSize, map.data[0], map.data[1], map.data[2], map.data[3], map.data[4]);
+		//g_print ("nal_unit_type=%d\n", map.data[4]&0x1F);
 
 #if 0
-
 		g_print ("encode size = %d, appsink0_buffer = %02x %02x %02x %02x %02x\n",
 					iBufSize, map.data[0], map.data[1], map.data[2], map.data[3], map.data[4]);
 		g_print ("encode size = %d, appsink0_buffer = %02x %02x %02x %02x %02x\n",
@@ -104,6 +114,14 @@ static GstPadProbeReturn enc_buffer(GstPad *pad, GstPadProbeInfo *info, gpointer
 			g_print("[%d]%02x ",i,map.data[i]);
 		}
 		g_print("\n");
+
+		if(map.data[4]==0x67)
+		{
+			for (int i=0; i<1000; i++)
+			{
+				g_print("[%d]%02x ",	i,	map.data[i]);
+			}
+		}
 #endif
 
 		gst_buffer_unmap(buffer, &map);
@@ -112,7 +130,6 @@ static GstPadProbeReturn enc_buffer(GstPad *pad, GstPadProbeInfo *info, gpointer
 
 	return GST_PAD_PROBE_OK;
 }
-
 
 CustomData g_customData;
 
@@ -127,57 +144,32 @@ int gst_test(int argc, char *argv[])
 	gst_init (&argc, &argv);
 
 	/* Create the elements */
-
-#if USE_H264_ENCODE_FILE
-	p_customData->source = gst_element_factory_make ("filesrc", NULL);
-	p_customData->qtdemux = gst_element_factory_make("qtdemux", NULL);
-	p_customData->h264parse = gst_element_factory_make ("h264parse", NULL);
-	p_customData->h264dec = gst_element_factory_make ("avdec_h264", NULL);
-#else
+#if LOCAL_TEST
 	p_customData->source = gst_element_factory_make ("videotestsrc", NULL);
+#else
+	p_customData->source = gst_element_factory_make ("v4l2src", NULL);
 #endif
 
 	p_customData->videoconvert = gst_element_factory_make ("videoconvert", NULL);
 
-#if USE_DISPLAYSINK
-	p_customData->glimagesink = gst_element_factory_make ("xvimagesink", NULL);
+#if ARM
+	p_customData->x264enc = gst_element_factory_make ("omxh264enc", NULL);
 #else
 	p_customData->x264enc = gst_element_factory_make ("x264enc", NULL);
+#endif
+
 	p_customData->h264parse1 = gst_element_factory_make ("h264parse", NULL);
-
-#if	USE_UDPSINK
-	p_customData->rtph264pay = gst_element_factory_make ("rtph264pay", NULL);
-	p_customData->udpsink = gst_element_factory_make ("udpsink", NULL);
-#else
 	p_customData->appsink = gst_element_factory_make ("fakesink", NULL);
-#endif /*USE_UDPSINK*/
-
-#endif /*USE_DISPLAYSINK*/
 
 	/* Create the empty pipeline */
 	p_customData->pipeline = gst_pipeline_new ("test-pipeline");
 
 	if (!p_customData->pipeline		||
 		!p_customData->source			||
-#if USE_H264_ENCODE_FILE
-	!p_customData->qtdemux		||
-		!p_customData->h264parse	||
-		!p_customData->h264dec		||
-#endif
 		!p_customData->videoconvert ||
-#if USE_DISPLAYSINK
-		!p_customData->glimagesink
-#else
 		!p_customData->x264enc			||
 		!p_customData->h264parse1	||
-#if USE_UDPSINK
-		!p_customData->rtph264pay	||
-		!p_customData->udpsink
-#else
 		!p_customData->appsink
-#endif /* USE_UDPSINK */
-
-#endif /* USE_DISPLAYSINK */
 		){
 		g_printerr ("Not all elements could be created.\n");
 		return -1;
@@ -188,99 +180,59 @@ int gst_test(int argc, char *argv[])
 	gst_bin_add_many (
 					GST_BIN(p_customData->pipeline),
 					p_customData->source,
-
-#if USE_H264_ENCODE_FILE
-					//p_customData->qtdemux ,
-					p_customData->h264parse ,
-					p_customData->h264dec,
-#endif
 					p_customData->videoconvert ,
-#if USE_DISPLAYSINK
-					p_customData->glimagesink,
-#else
 					p_customData->x264enc,
 					p_customData->h264parse1 ,
-#if USE_UDPSINK
-					p_customData->rtph264pay ,
-					p_customData->udpsink ,
-#else
 					p_customData->appsink ,
-#endif /* USE_UDPSINK */
-#endif /* USE_DISPLAYSINK */
 					NULL);
 
-
-
 	if (gst_element_link_many (p_customData->source,
-#if USE_H264_ENCODE_FILE
-		//p_customData->qtdemux ,
-		p_customData->h264parse ,
-		p_customData->h264dec,
-#endif /* USE_H264_ENCODE_FILE */
-
 		p_customData->videoconvert ,
-
-#if USE_DISPLAYSINK
-		p_customData->glimagesink,
-#else
 		p_customData->x264enc,
-#endif /* USE_DISPLAYSINK */
-	NULL) != TRUE)
+		NULL) != TRUE)
 	{
 		g_printerr ("Elements could not be linked.\n");
 		gst_object_unref (p_customData->pipeline);
 		return -1;
 	}
 
-#if (!USE_DISPLAYSINK)
 	if (gst_element_link_many (
 				p_customData->h264parse1,
-#if USE_UDPSINK
-				p_customData->rtph264pay,
-				p_customData->udpsink,
-#else
 				p_customData->appsink,
-#endif /* USE_UDPSINK */
-	 NULL) != TRUE)
+				NULL) != TRUE)
 	{
 		g_printerr ("Elements could not be linked.\n");
 		gst_object_unref (p_customData->pipeline);
 		return -1;
 	}
-#endif
+
 
 	/* Modify the source's properties */
-#if USE_H264_ENCODE_FILE
-	g_object_set (G_OBJECT(p_customData->source), "location", "E:\\gstreamer\\1.0\\x86\\bin\\src.h264", NULL);
-	g_print ("USE: filesrc:%s. \n", "E:\\gstreamer\\1.0\\x86\\bin\\src.h264");
-#else
-
-#if 1
-	int pattern = 18; //18
+#if LOCAL_TEST
+	int pattern = 18; //1-生成马赛克；	18-运动小球
 	g_object_set (G_OBJECT(p_customData->source), "is-live", 1, NULL);
 	g_object_set (G_OBJECT(p_customData->source), "do-timestamp", 1, NULL);
 	g_object_set (G_OBJECT(p_customData->source), "pattern", pattern, NULL);
 	g_print ("USE: videotestsrc:pattern=%d .\n", pattern);
 #else
-	g_object_set (G_OBJECT(p_customData->source), "device", "/dev/video1", NULL);
+	g_object_set (G_OBJECT(p_customData->source), "device", "/dev/video0", NULL);
 #endif
 
-#endif
-
-#if USE_DISPLAYSINK
-	//do nothing
-	g_print ("USE: glimagesink, Local playing .\n");
+#if ARM
+	g_object_set (G_OBJECT(p_customData->x264enc), "iframeinterval" , 25, NULL);
+	g_object_set (G_OBJECT(p_customData->x264enc), "insert-sps-pps" , 1, NULL);
 #else
-
-//	g_object_set (G_OBJECT(p_customData->x264enc), "byte-stream" , 1, NULL);
-//	g_object_set (G_OBJECT(p_customData->x264enc), "key-int-max" , 25, NULL);  //bitrate
-//	g_object_set (G_OBJECT(p_customData->x264enc), "bitrate" , 10000, NULL);
+	g_object_set (G_OBJECT(p_customData->x264enc), "byte-stream" , 1, NULL);
+	g_object_set (G_OBJECT(p_customData->x264enc), "key-int-max" , 25, NULL);  //bitrate
+	g_object_set (G_OBJECT(p_customData->x264enc), "bitrate" , 100000, NULL);
+	g_object_set (G_OBJECT(p_customData->x264enc), "aud" , 0, NULL);  //设置为1,默认输出的起始码会变成00 00 00 01 69,而不是我们期待的00 00 00 01 67开始
+#endif
 
 	p_customData->caps_enc_to_parse = gst_caps_new_simple("video/x-h264",
 		//"width", G_TYPE_INT, p_customData->width,
 		//"height", G_TYPE_INT, p_customData->height,
 		"stream-format", G_TYPE_STRING, "byte-stream",
-	   //  "framerate", GST_TYPE_FRACTION, 30, 1,
+	   //"framerate", GST_TYPE_FRACTION, 30, 1,
 		NULL);
 
 	if(!gst_element_link_filtered(p_customData->x264enc, p_customData->h264parse1, p_customData->caps_enc_to_parse))
@@ -297,20 +249,11 @@ int gst_test(int argc, char *argv[])
 	gst_pad_add_probe(h264parse_pad, GST_PAD_PROBE_TYPE_BUFFER, (GstPadProbeCallback) enc_buffer, p_customData, (GDestroyNotify)NULL);
 	gst_object_unref(h264parse_pad);
 
-#if USE_UDPSINK
-	int port = 17000;
-	g_object_set (G_OBJECT(p_customData->rtph264pay), "config-interval" , 1, NULL);
-	g_object_set (G_OBJECT(p_customData->udpsink), "host", "192.168.3.116", NULL);
-	g_object_set (G_OBJECT(p_customData->udpsink), "port", port, NULL);
-	g_object_set (G_OBJECT(p_customData->udpsink), "sync", false, NULL);
-	g_print ("UDP:  \n HostIP:192.168.3.116 \n   Port:%d \n ( Use VLC play method: Open *.sdp file) \n", port);
-#elif USE_APPSINK
+#if USE_APPSINK
 	g_object_set (G_OBJECT(p_customData->appsink), "drop", 1, NULL);
 #else
 	//do nothing
 #endif
-
-#endif /* USE_DISPLAYSINK */
 
 	p_customData->loop = g_main_loop_new(NULL, FALSE);
 	   /* Start playing   */
@@ -324,7 +267,6 @@ int gst_test(int argc, char *argv[])
 	/* Wait until error or EOS */
 	p_customData->bus = gst_element_get_bus(p_customData->pipeline);
 	gst_bus_add_watch(p_customData->bus, bus_call, p_customData->loop);
-
 	g_main_loop_run(p_customData->loop);
 
 	/* Free resources */
@@ -342,42 +284,42 @@ gboolean bus_call(GstBus *bus, GstMessage *message, gpointer user_data)
 
 	switch(GST_MESSAGE_TYPE(message))
 	{
-	case GST_MESSAGE_ERROR:
-		{
-			GError *err = NULL;
-			gchar *name, *debug = NULL;
-			name = gst_object_get_path_string (message->src);
-			gst_message_parse_error (message, &err, &debug);
-			g_printerr ("ERROR: from element %s: %s\n", name, err->message);
-			if (debug != NULL)
-				g_printerr ("Additional debug info:\n%s\n", debug);
-			g_error_free (err);
-			g_free (debug);
-			g_free (name);
+		case GST_MESSAGE_ERROR:
+			{
+				GError *err = NULL;
+				gchar *name, *debug = NULL;
+				name = gst_object_get_path_string (message->src);
+				gst_message_parse_error (message, &err, &debug);
+				g_printerr ("ERROR: from element %s: %s\n", name, err->message);
+				if (debug != NULL)
+					g_printerr ("Additional debug info:\n%s\n", debug);
+				g_error_free (err);
+				g_free (debug);
+				g_free (name);
+				g_main_loop_quit (loop);
+				break;
+			}
+		case GST_MESSAGE_WARNING:
+			{
+				GError *err = NULL;
+				gchar *name, *debug = NULL;
+				name = gst_object_get_path_string (message->src);
+				gst_message_parse_warning (message, &err, &debug);
+				g_printerr ("ERROR: from element %s: %s\n", name, err->message);
+				if (debug != NULL)
+					g_printerr ("Additional debug info:\n%s\n", debug);
+				g_error_free (err);
+				g_free (debug);
+				g_free (name);
+				break;
+			}
+		case GST_MESSAGE_EOS:
+			g_print ("Got EOS\n");
 			g_main_loop_quit (loop);
 			break;
-		}
-	case GST_MESSAGE_WARNING:
-		{
-			GError *err = NULL;
-			gchar *name, *debug = NULL;
-			name = gst_object_get_path_string (message->src);
-			gst_message_parse_warning (message, &err, &debug);
-			g_printerr ("ERROR: from element %s: %s\n", name, err->message);
-			if (debug != NULL)
-				g_printerr ("Additional debug info:\n%s\n", debug);
-			g_error_free (err);
-			g_free (debug);
-			g_free (name);
-			break;
-		}
-	case GST_MESSAGE_EOS:
-		g_print ("Got EOS\n");
-		g_main_loop_quit (loop);
-		break;
 
-	default:
-		break;
+		default:
+			break;
 	}
 
 	return TRUE;

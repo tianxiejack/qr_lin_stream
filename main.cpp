@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
   }
   #endif
 #if 1
-      std::string streamName = "usb1";
+  	  OutPacketBuffer::maxSize = 600000;
+      std::string streamName = "stream1";
       ServerMediaSession* sms = ServerMediaSession::createNew(*env, streamName.c_str(), streamName.c_str(), "Live H264 Stream");
       H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*env, true);
       sms->addSubsession(liveSubSession);
@@ -67,21 +68,7 @@ int main(int argc, char** argv) {
 
       announceStream(rtspServer, sms, streamName.c_str());
 #endif
-#if 0
-  // A H.264 video elementary stream:
-  {
-    char const* streamName = "h264ESVideoTest";
-    char const* inputFileName = "1test.264";
-    ServerMediaSession* sms
-      = ServerMediaSession::createNew(*env, streamName, streamName,
-                      descriptionString);
-    sms->addSubsession(H264FILE_VideoServerMediaSubssion
-               ::createNew(*env, inputFileName, reuseFirstSource));//修改为自己实现的servermedia  H264LiveVideoServerMediaSubssion
-    rtspServer->addServerMediaSession(sms);
 
-    announceStream(rtspServer, sms, streamName);
-  }
-#endif
 
 
   // Also, attempt to create a HTTP server for RTSP-over-HTTP tunneling.

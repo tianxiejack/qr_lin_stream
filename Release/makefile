@@ -58,19 +58,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: local_test_live555
+all: LIN_Streamer
 
 # Tool invocations
-local_test_live555: $(OBJS) $(USER_OBJS)
+LIN_Streamer: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: NVCC Linker'
-	/usr/local/cuda-8.0/bin/nvcc --cudart shared -L/usr/local/lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu/tegra -L/usr/local/cuda-8.0/targets/aarch64-linux/lib --relocatable-device-code=false -gencode arch=compute_50,code=compute_50 -gencode arch=compute_50,code=sm_50 -m64 -ccbin aarch64-linux-gnu-g++ -link -o  "local_test_live555" $(OBJS) $(USER_OBJS) $(LIBS)
+	/usr/local/cuda-8.0/bin/nvcc --cudart shared -L/usr/local/lib -L/usr/lib/aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu/tegra -L/usr/local/cuda-8.0/targets/aarch64-linux/lib --relocatable-device-code=false -gencode arch=compute_50,code=compute_50 -gencode arch=compute_50,code=sm_50 -m64 -ccbin aarch64-linux-gnu-g++ -link -o  "LIN_Streamer" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(CU_DEPS)$(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) local_test_live555
+	-$(RM) $(CU_DEPS)$(OBJS)$(C++_DEPS)$(C_DEPS)$(CC_DEPS)$(CPP_DEPS)$(EXECUTABLES)$(CXX_DEPS)$(C_UPPER_DEPS) LIN_Streamer
 	-@echo ' '
 
 .PHONY: all clean dependents

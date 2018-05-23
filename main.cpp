@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #define USE_NET_RECEIVE		(1)
+#define ACCESS_CONTROL		(1)
 
 #if USE_NET_RECEIVE
 	#include <app_global_def.h>
@@ -60,12 +61,29 @@ int main(int argc, char** argv) {
   env = BasicUsageEnvironment::createNew(*scheduler);
 
   UserAuthenticationDatabase* authDB = NULL;
-  // Create the RTSP server:
-  RTSPServer* rtspServer = RTSPServer::createNew(*env, 8554, authDB);
-  if (rtspServer == NULL) {
-    *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
-    exit(1);
-  }
+
+#ifdef ACCESS_CONTROL
+  // To implement client access control to the RTSP server, do the following:
+  authDB = new UserAuthenticationDatabase;
+  /* authDB->addUserRecord("username1", "password1"); // replace these with real strings */
+  authDB->addUserRecord("admin", "admin12345");
+  // Repeat the above with each <username>, <password> that you wish to allow
+  // access to the server.
+#endif
+
+  // Create the RTSP server.  Try first with the default port number (554),
+    // and then with the alternative port number (8554):
+    RTSPServer* rtspServer;
+    portNumBits rtspServerPortNum = 554;
+    rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
+    if (rtspServer == NULL) {
+      rtspServerPortNum = 8554;
+      rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
+    }
+    if (rtspServer == NULL) {
+      *env << "Failed to create RTSP server: " << env->getResultMsg() << "\n";
+      exit(1);
+    }
 
   char const* descriptionString
     = "Session streamed by \"testOnDemandRTSPServer\"";
@@ -77,7 +95,8 @@ int main(int argc, char** argv) {
 
 #if 1
   	  OutPacketBuffer::maxSize = 600000;
-      std::string streamName = "stream1";
+      //std::string streamName = "stream1";
+  	  std::string streamName = "";
       ServerMediaSession* sms = ServerMediaSession::createNew(*env, streamName.c_str(), streamName.c_str(), "Live H264 Stream");
       H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*env, true);
       sms->addSubsession(liveSubSession);

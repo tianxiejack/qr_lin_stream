@@ -4,8 +4,9 @@
 #include <iostream>
 #include <stdio.h>
 
-#define USE_NET_RECEIVE		(1)
-#define ACCESS_CONTROL		(1)
+#define USE_NET_RECEIVE		(0)
+#define ACCESS_CONTROL		(0)
+#define USE_STREAM_NAME	(1)
 
 #if USE_NET_RECEIVE
 	#include <app_global_def.h>
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
 
   UserAuthenticationDatabase* authDB = NULL;
 
-#ifdef ACCESS_CONTROL
+#if ACCESS_CONTROL
   // To implement client access control to the RTSP server, do the following:
   authDB = new UserAuthenticationDatabase;
   /* authDB->addUserRecord("username1", "password1"); // replace these with real strings */
@@ -93,17 +94,20 @@ int main(int argc, char** argv) {
   // "ServerMediaSession" object, plus one or more
   // "ServerMediaSubsession" objects for each audio/video substream.
 
-#if 1
+
   	  OutPacketBuffer::maxSize = 600000;
-      //std::string streamName = "stream1";
+#if USE_STREAM_NAME
+      std::string streamName = "stream1";
+#else
   	  std::string streamName = "";
+#endif
       ServerMediaSession* sms = ServerMediaSession::createNew(*env, streamName.c_str(), streamName.c_str(), "Live H264 Stream");
       H264LiveServerMediaSession *liveSubSession = H264LiveServerMediaSession::createNew(*env, true);
       sms->addSubsession(liveSubSession);
       rtspServer->addServerMediaSession(sms);
 
       announceStream(rtspServer, sms, streamName.c_str());
-#endif
+
 
   // Also, attempt to create a HTTP server for RTSP-over-HTTP tunneling.
   // Try first with the default HTTP port (80), and then with the alternative HTTP

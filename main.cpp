@@ -4,9 +4,9 @@
 #include <iostream>
 #include <stdio.h>
 
-#define USE_NET_RECEIVE		(0)
-#define ACCESS_CONTROL		(0)
-#define USE_STREAM_NAME	(1)
+#define USE_NET_RECEIVE		(1)			//1:网络接收；0:本地接收
+#define ACCESS_CONTROL		(0)			//1:使用用户密码验证，用户名admin，密码admin12345；0:不使用用户密码验证
+#define USE_STREAM_NAME	(1)			//1:使用字节流的名字；0:不使用字节流的名字
 
 #if USE_NET_RECEIVE
 	#include <app_global_def.h>
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
   // "ServerMediaSubsession" objects for each audio/video substream.
 
 
-  	  OutPacketBuffer::maxSize = 600000;
+  	  OutPacketBuffer::maxSize = 400000;
 #if USE_STREAM_NAME
       std::string streamName = "stream1";
 #else

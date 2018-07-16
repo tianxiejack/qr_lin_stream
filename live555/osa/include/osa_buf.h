@@ -6,7 +6,7 @@
 #include <osa_que.h>
 #include <osa_mutex.h>
 
-#define OSA_BUF_NUM_MAX       128	//(8*4)
+#define OSA_BUF_NUM_MAX       4	//(8*4)
 
 #define OSA_BUF_ID_INVALID    (-1)
 

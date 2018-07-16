@@ -6,7 +6,7 @@
 using namespace std;
 
 
-#define MAX_BUF_LEN 0x600000	
+#define MAX_BUF_LEN 0x200000
 
 OSA_BufCreate tskBufCreate;
 OSA_BufHndl tsk_Buf;

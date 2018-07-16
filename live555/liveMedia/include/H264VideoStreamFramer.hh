@@ -31,6 +31,8 @@ along with this library; if not, write to the Free Software Foundation, Inc.,
 #include "liveMedia.hh"
 #include <OnDemandServerMediaSubsession.hh>
 
+#define ENABLE_SPLITE_I_FRAME (1)
+
 using namespace std;
 
 typedef struct
@@ -97,8 +99,10 @@ private:
     char fDoneFlag;
     RTPSink* fDummySink;
 protected:
-  	//virtual char const* sdpLines();
-   // virtual char const* getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource);
+    //virtual char const* sdpLines();
+#if ENABLE_SPLITE_I_FRAME
+    virtual char const* getAuxSDPLine(RTPSink* rtpSink, FramedSource* inputSource);
+#endif
 };
 
 

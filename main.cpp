@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
   // "ServerMediaSubsession" objects for each audio/video substream.
 
 
-  	  OutPacketBuffer::maxSize = 400000;
+  	  OutPacketBuffer::maxSize = 600000;
 #if USE_STREAM_NAME
       std::string streamName = "stream1";
 #else

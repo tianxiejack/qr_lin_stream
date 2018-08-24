@@ -28,22 +28,19 @@ static void announceStream(RTSPServer* rtspServer, ServerMediaSession* sms,
 			   char const* streamName); // fwd
 
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 
 	printf(" Build Timestamp: date %s %s\r\n", __DATE__, __TIME__);
+	int streamIndex = 0;
+	if(argc>=2)
+		streamIndex = atol(argv[1]);
 
 #if USE_NET_RECEIVE
 		int i, runstat = -1;
-		int localPort = 0;
+		int localPort = 17000 ;
+		localPort += streamIndex;
 
-		for(i=1; i<argc; i++)
-		{
-				if(atoi(argv[i]) != 0)
-				{
-						localPort = atoi(argv[i]);
-						runstat = 0;
-				}
-		}
 		if((argc <= 1) || (runstat == -1) || (localPort < 15000 || localPort > 20000))
 		{
 				printf(" Usage: a.out [socket port](15000-20000) \r\n");
@@ -51,6 +48,7 @@ int main(int argc, char** argv) {
 				printf(" \n");
 				return 0;
 		}
+
 		bitsInterfacesCreate(localPort);
 #else
 		create_ring_buffer();
@@ -75,10 +73,10 @@ int main(int argc, char** argv) {
   // Create the RTSP server.  Try first with the default port number (554),
     // and then with the alternative port number (8554):
     RTSPServer* rtspServer;
-    portNumBits rtspServerPortNum = 8554;
+    portNumBits rtspServerPortNum = 8550;
+    rtspServerPortNum += streamIndex;
     rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
     if (rtspServer == NULL) {
-      rtspServerPortNum = 8554;
       rtspServer = RTSPServer::createNew(*env, rtspServerPortNum, authDB);
     }
     if (rtspServer == NULL) {
@@ -97,7 +95,10 @@ int main(int argc, char** argv) {
 
   	  OutPacketBuffer::maxSize = 600000;
 #if USE_STREAM_NAME
-      std::string streamName = "stream1";
+      std::string streamName = "stream";
+      char strTmp[8] = "";
+      sprintf(strTmp, "%d", streamIndex);
+      streamName += strTmp;
 #else
   	  std::string streamName = "";
 #endif

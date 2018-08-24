@@ -37,11 +37,10 @@ int main(int argc, char** argv)
 		streamIndex = atol(argv[1]);
 
 #if USE_NET_RECEIVE
-		int i, runstat = -1;
 		int localPort = 17000 ;
 		localPort += streamIndex;
 
-		if((argc <= 1) || (runstat == -1) || (localPort < 15000 || localPort > 20000))
+		if((localPort < 15000 || localPort > 20000))
 		{
 				printf(" Usage: a.out [socket port](15000-20000) \r\n");
 				printf(" Example: ./a.out 17000 \r\n");
@@ -97,7 +96,7 @@ int main(int argc, char** argv)
 #if USE_STREAM_NAME
       std::string streamName = "stream";
       char strTmp[8] = "";
-      sprintf(strTmp, "%d", streamIndex);
+      sprintf(strTmp, "%d", streamIndex+1);
       streamName += strTmp;
 #else
   	  std::string streamName = "";
